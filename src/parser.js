@@ -52,6 +52,13 @@ var RE_UnixEntry = new RegExp(
 var RE_DOSEntry = new RegExp(
   "(\\S+)\\s+(\\S+)\\s+" +
   "(<DIR>)?\\s*" +
+  // "([0-9]+)?\\s*" +
+  "(\\S.*)"
+);
+// fix:  RE_DOSEntry2 for dir is numbers
+var RE_DOSEntry2 = new RegExp(
+  "(\\S+)\\s+(\\S+)\\s+" +
+  // "(<DIR>)?\\s*" +
   "([0-9]+)?\\s*" +
   "(\\S.*)"
 );
@@ -265,7 +272,9 @@ var parsers = {
   },
 
   msdos: function(entry) {
-    var group = entry.match(RE_DOSEntry);
+    var isDir = (entry.indexOf('<DIR>') > 0);
+    var regx =  isDir ? RE_DOSEntry : RE_DOSEntry2;
+    var group = entry.match(regx);
     var type;
 
     if (!group) {
@@ -278,19 +287,18 @@ var parsers = {
 
     var time = group[2].replace(/(\d{2}):(\d{2})([AP]M)/, replacer);
     var date = new Date(group[1] + " " + time).getTime();
-    var dirString = group[3];
-    var size = group[4];
-    var name = group[5];
+    var size = group[3] || 0;
+    var name = group[4];
 
     if (null == name || name === "." || name === "..") {
       return null;
     }
 
-    if (dirString === "<DIR>") {
+    if (isDir) {
       type = exports.nodeTypes.DIRECTORY_TYPE;
       size = 0;
-    }
-    else {
+
+    }else {
       type = exports.nodeTypes.FILE_TYPE;
     }
 
